@@ -1,0 +1,56 @@
+---
+# ============================================================================
+# Flatpak Demo Playbook — Command vs. Flatpak Modules
+# Run: ansible-playbook flatpak_demo.yml --tags basic
+#      ansible-playbook flatpak_demo.yml --tags best
+# ============================================================================
+
+- name: Flatpak Demo (Two Approaches)
+  hosts: managed_nodes
+  become: true
+  gather_facts: false
+
+  tasks:
+    ###########################################################################
+    # SECTION 1 — BASIC APPROACH USING COMMAND MODULE
+    ###########################################################################
+    - name: Ensure Flatpak is installed (Basic)
+      ansible.builtin.dnf:
+        name: flatpak
+        state: present
+      tags: [basic]
+
+    - name: Add Flathub repo (Basic)
+      ansible.builtin.command:
+        cmd: flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+      changed_when: false
+      tags: [basic]
+
+    - name: Update Flatpak metadata (Basic)
+      ansible.builtin.command:
+        cmd: flatpak update --appstream -y
+      changed_when: false
+      tags: [basic]
+
+    - name: Install GIMP using command module (Basic)
+      ansible.builtin.command:
+        cmd: flatpak install -y flathub org.gimp.GIMP
+      changed_when: false
+      tags: [basic]
+
+    ###########################################################################
+    # SECTION 2 — BEST PRACTICE USING FLATPAK MODULES
+    ###########################################################################
+    - name: Ensure Flathub remote exists (Best)
+      community.general.flatpak_remote:
+        name: flathub
+        state: present
+        flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+      tags: [best]
+
+    - name: Ensure GIMP is installed from Flathub (Best)
+      community.general.flatpak:
+        name: org.gimp.GIMP
+        remote: flathub
+        state: present
+      tags: [best]

@@ -1,0 +1,27 @@
+---
+- name: Install Flatpak and GIMP on managed nodes
+  hosts: managed_nodes
+  become: true
+  vars_files:
+    - secrets.yml
+
+  tasks:
+    - name: Ensure Flatpak is installed
+      ansible.builtin.dnf:
+        name: flatpak
+        state: present
+
+    - name: Add Flathub repository if not exists
+      ansible.builtin.command:
+        cmd: flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+      changed_when: false
+
+    - name: Update Flatpak metadata
+      ansible.builtin.command:
+        cmd: flatpak update --appstream
+      changed_when: false
+
+    - name: Install GIMP from Flathub
+      ansible.builtin.command:
+        cmd: flatpak install -y flathub org.gimp.GIMP
+      changed_when: false

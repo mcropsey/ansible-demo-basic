@@ -1,0 +1,22 @@
+---
+- name: Verify sudo password (via Ansible Vault)
+  hosts: all
+  gather_facts: no
+  vars_files:
+    - secrets.yml
+  vars:
+    ansible_become_password: "{{ ansible_become_password }}"
+
+  tasks:
+    - name: Verify sudo by becoming root and checking UID
+      ansible.builtin.command: id -u
+      become: yes
+      become_method: sudo
+      become_user: root
+      register: id_out
+      changed_when: false
+      failed_when: id_out.stdout != "0"
+
+    - name: Report success
+      ansible.builtin.debug:
+        msg: "Sudo verified: became root on {{ inventory_hostname }}"
