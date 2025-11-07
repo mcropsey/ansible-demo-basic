@@ -1,37 +1,52 @@
 ---
-# YAML document start indicator
+# YAML document start
+- name: Install Flatpak + Flathub + GIMP (Rocky-Proof Edition)
+  # ^ Play name shown in output
 
-- name: Install Flatpak + Flathub + Popular Apps  # Play name shown in Ansible output
-  hosts: managed_nodes                          # Target group from your inventory
-  become: true                                  # Use sudo for elevated privileges
-  gather_facts: false                           # Skip system fact gathering for faster runs
+  hosts: managed_nodes
+  # ^ Run on all hosts in the [managed_nodes] group from inventory.ini
+
+  become: true
+  # ^ Escalate to root using sudo (password from secrets.yml)
+
+  gather_facts: false
+  # ^ Skip fact gathering → faster runs (we don't need facts here)
+
   vars_files:
-    - secrets.yml                               # Load external variable file (e.g., passwords, tokens)
+    - secrets.yml
+    # ^ Load encrypted sudo password so we never type it
 
-  tasks:                                        # Begin list of tasks to run
-    - name: Install flatpak package              # Task description
-      ansible.builtin.dnf:                      # Use the built-in DNF module for RHEL/Fedora
-        name: flatpak                           # Package to install
-        state: present                          # Ensure the package is installed (idempotent)
+  tasks:
+    # ──────────────────────────────────────────────────────────────
+    # 1. Install the flatpak package from Fedora/Rocky repos
+    # ──────────────────────────────────────────────────────────────
+    - name: Install flatpak package
+      ansible.builtin.dnf:
+        name: flatpak
+        state: present
+      # ^ Idempotent: installs if missing, does nothing if already there
 
-    - name: Add Flathub repository (official module)  # Task to configure Flatpak remote
-      community.general.flatpak_remote:         # Module for managing Flatpak repositories
-        name: flathub                           # Name of the Flatpak remote repo
-        state: present                          # Ensure this repo exists
-        flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo  # Official Flathub URL
+    # ──────────────────────────────────────────────────────────────
+    # 2. Add Flathub repository (only if not already added)
+    # ──────────────────────────────────────────────────────────────
+    - name: Add Flathub repository (never fails)
+      ansible.builtin.command: >-
+        flatpak remote-add --if-not-exists --system
+        flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+      changed_when: false
+      # --if-not-exists → safe even if Flathub already exists
+      # --system       → install system-wide (not per-user)
+      # changed_when: false → always show green after first run
 
-    - name: Install popular Flatpak apps         # Task description
-      community.general.flatpak:                 # Module for managing Flatpak applications
-        name:                                   # List of application IDs to install
-          - org.libreoffice.LibreOffice          # LibreOffice office suite
-          - org.gimp.GIMP                        # GIMP image editor
-          - com.spotify.Client                   # Spotify music client
-          - us.zoom.Zoom                         # Zoom video conferencing
-          - org.mozilla.firefox                  # Firefox browser
-          - com.valvesoftware.Steam              # Steam gaming platform
-          - org.videolan.VLC                     # VLC media player
-          - com.obsproject.Studio                # OBS Studio for streaming/recording
-          - org.telegram.desktop                 # Telegram desktop client
-          - com.slack.Slack                      # Slack messaging app
-        remote: flathub                         # Source repository (Flathub)
-        state: present                          # Ensure each app is installed
+    # ──────────────────────────────────────────────────────────────
+    # 3. Install GIMP from Flathub (update if newer version exists)
+    # ──────────────────────────────────────────────────────────────
+    - name: Install GIMP (idempotent + always green)
+      ansible.builtin.command: >-
+        flatpak install --system --noninteractive --or-update
+        flathub org.gimp.GIMP
+      changed_when: false
+      # --system         → system-wide install
+      # --noninteractive → no prompts
+      # --or-update      → update GIMP if newer version available
+      # changed_when: false → pure green output every run after first

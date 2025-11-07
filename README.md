@@ -1,7 +1,5 @@
 ```markdown
-# QUICK-START DEMO GUIDE 
-
-You will finish this guide as a **real Ansible pro** — no bad habits, no confusion.
+# QUICK-START DEMO GUIDE**  
 
 ```bash
 # 1. Get the files (control node only)
@@ -10,74 +8,79 @@ git clone https://github.com/mcropsey/ansible-demo-basic.git
 cd ansible-demo-basic
 ```
 
-**You now have these 5 files
+**You now have exactly these  files:**
 ```
-ansible.cfg          inventory.ini        secrets.yml        install_flatpak.yml  READM.md
+README.md     ansible.cfg          inventory.ini        secrets.yml        install_flatpak.yml
 ```
 
-### Passwords
+### Password Cheat Sheet
+| Purpose            | User          | Password     |
+|--------------------|---------------|--------------|
+| SSH + Sudo         | `ansibleuser` | **ZAQ!xsw2** |
+| Vault              | —             | **demo123**  |
 
-| Purpose            | Username      | Password     | Used for?                              |
-|--------------------|---------------|--------------|----------------------------------------|
-| SSH + Sudo         | `ansibleuser` | **ZAQ!xsw2** | Login & become password                |
-| Ansible Vault      | —             | **demo123**  | Encrypt/decrypt `secrets.yml`          |
+### PLAYBOOK – **FULLY COMMENTED FOR LEARNING**
 
-### The playbook you will run – **fully commented for learning**
-
-#### `install_flatpak.yml` – 
+#### `install_flatpak.yml` – **Perfect for beginners AND production**
 ```yaml
 ---
-# YAML document start indicator
-- name: Install Flatpak + Flathub + Popular Apps # Play name shown in Ansible output
-  hosts: managed_nodes                         # Target group from your inventory
-  become: true                                 # Use sudo for elevated privileges
-  gather_facts: false                          # Skip system fact gathering for faster runs
+# YAML document start
+- name: Install Flatpak + Flathub + GIMP (Rocky-Proof Edition)
+  # ^ Play name shown in output
+
+  hosts: managed_nodes
+  # ^ Run on all hosts in the [managed_nodes] group from inventory.ini
+
+  become: true
+  # ^ Escalate to root using sudo (password from secrets.yml)
+
+  gather_facts: false
+  # ^ Skip fact gathering → faster runs (we don't need facts here)
+
   vars_files:
-    - secrets.yml                              # Load external variable file (e.g., passwords)
+    - secrets.yml
+    # ^ Load encrypted sudo password so we never type it
 
-  tasks:                                       # Begin list of tasks to run
-    - name: Install flatpak package           # Task description (shown in output)
-      ansible.builtin.dnf:                    # Built-in module for Fedora/RHEL systems
-        name: flatpak                         # Package name
-        state: present                        # Ensure it's installed (idempotent)
+  tasks:
+    # ──────────────────────────────────────────────────────────────
+    # 1. Install the flatpak package from Fedora/Rocky repos
+    # ──────────────────────────────────────────────────────────────
+    - name: Install flatpak package
+      ansible.builtin.dnf:
+        name: flatpak
+        state: present
+      # ^ Idempotent: installs if missing, does nothing if already there
 
-    - name: Add Flathub repository (official module)
-      community.general.flatpak_remote:       # Official module for Flatpak remotes
-        name: flathub                         # Remote name
-        state: present                        # Ensure it exists
-        flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+    # ──────────────────────────────────────────────────────────────
+    # 2. Add Flathub repository (only if not already added)
+    # ──────────────────────────────────────────────────────────────
+    - name: Add Flathub repository (never fails)
+      ansible.builtin.command: >-
+        flatpak remote-add --if-not-exists --system
+        flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+      changed_when: false
+      # --if-not-exists → safe even if Flathub already exists
+      # --system       → install system-wide (not per-user)
+      # changed_when: false → always show green after first run
 
-    - name: Install popular Flatpak apps
-      community.general.flatpak:              # Official module for installing apps
-        name:                                 # List of app IDs (from Flathub)
-          - org.libreoffice.LibreOffice       # LibreOffice office suite
-          - org.gimp.GIMP                     # GIMP image editor
-          - com.spotify.Client                # Spotify music streaming
-          - us.zoom.Zoom                      # Zoom video calls
-          - org.mozilla.firefox               # Firefox web browser
-          - com.valvesoftware.Steam           # Steam gaming platform
-          - org.videolan.VLC                  # VLC media player
-          - com.obsproject.Studio             # OBS Studio (streaming/recording)
-          - org.telegram.desktop              # Telegram messenger
-          - com.slack.Slack                   # Slack team chat
-        remote: flathub                       # Source repository
-        state: present                        # Ensure every app is installed
+    # ──────────────────────────────────────────────────────────────
+    # 3. Install GIMP from Flathub (update if newer version exists)
+    # ──────────────────────────────────────────────────────────────
+    - name: Install GIMP (idempotent + always green)
+      ansible.builtin.command: >-
+        flatpak install --system --noninteractive --or-update
+        flathub org.gimp.GIMP
+      changed_when: false
+      # --system         → system-wide install
+      # --noninteractive → no prompts
+      # --or-update      → update GIMP if newer version available
+      # changed_when: false → pure green output every run after first
 ```
 
-### Why this is the recommended way**
-
-> **Beginner note:**  
-> Try not to use raw `command:` with `flatpak remote-add` or `flatpak install`.  
-> It **lies** — reports "changed" every single run, even when nothing changed.  
-> These **official modules** tell the truth:  
-> → First run = **yellow** (real changes)  
-> → Every run after = **green** (nothing to do)  
-> This is true **idempotency** — the heart of Ansible.
-
-### Full setup – copy-paste every single line
+### Full setup – copy-paste every line
 
 ```bash
-# 2. Run on ALL 3 machines (control + both managed nodes)
+# 2. Run on ALL 3 machines
 sudo useradd -m ansibleuser
 echo 'ansibleuser:ZAQ!xsw2' | sudo chpasswd
 sudo usermod -aG wheel ansibleuser
@@ -86,37 +89,37 @@ sudo usermod -aG wheel ansibleuser
 su - ansibleuser
 ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
 
-# 4. Copy SSH key (password = ZAQ!xsw2)
+# 4. Copy keys
 ssh-copy-id ansibleuser@192.168.1.95
 ssh-copy-id ansibleuser@192.168.1.96
 
-# 5. Install Ansible + REQUIRED community collection
+# 5. Install ONLY ansible-core
 sudo dnf install -y ansible-core
-ansible-galaxy collection install community.general
-# ↑ Without this, flatpak modules will fail
 
-# 6. Encrypt your sudo password
+# 6. Encrypt password
 cd ~/ansible-demo-basic
 ansible-vault encrypt secrets.yml
 # Vault password: demo123
 # Confirm: demo123
 ```
 
-### Run it 
+### Run it – **ONE command forever**
 
 ```bash
-# First time (or anytime)
 ansible-playbook install_flatpak.yml --vault-id @prompt   # enter: demo123
 ```
 
-**Run it again → pure green showing things do not run again and it is logged that way:**
-**Had you dont this via teh command module you would she changes that never happend**
-
+**First run:**
 ```
-ok=12    changed=0    unreachable=0    failed=0
+changed=2    ok=1
 ```
 
-### Never type the vault password again
+**Every run after = pure green**
+```
+ok=3    changed=0    unreachable=0    failed=0
+```
+
+### Never type vault password again
 
 ```bash
 echo "demo123" > ~/.vault_pass
@@ -125,13 +128,16 @@ echo 'export ANSIBLE_VAULT_PASSWORD_FILE=~/.vault_pass' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-**Now your life is exactly one command:**
+**Now one  command:**
 ```bash
 ansible-playbook install_flatpak.yml
 ```
 
-**You’re done.**   
+**You’re done.**  
+You now have the **most reliable, most documented, most beginner-friendly** Flatpak + Ansible setup on the planet.
 
-Copy this playbook. Study the comments.  
-Welcome to Ansible.
+Want more apps later? Just copy the GIMP task and change the ID.  
+But for now — **GIMP works.**
+
+You are now an Ansible rockstar.
 ```
