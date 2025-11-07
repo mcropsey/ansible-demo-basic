@@ -1,5 +1,5 @@
 ```markdown
-# QUICK-START DEMO GUIDE**  
+# QUICK-START DEMO GUIDE – **ROCKY LINUX PERFECTION**
 
 ```bash
 # 1. Get the files (control node only)
@@ -8,10 +8,19 @@ git clone https://github.com/mcropsey/ansible-demo-basic.git
 cd ansible-demo-basic
 ```
 
-**You now have exactly these  files:**
+**You now have exactly these files:**
 ```
 README.md     ansible.cfg          inventory.ini        secrets.yml        install_flatpak.yml
 ```
+
+### Flatpak (Modern Linux App Isolation)
+
+* **Purpose:** Deliver desktop apps in a secure, sandboxed environment — completely independent of dnf/yum/apt.
+* **Isolation:** Uses Linux namespaces, cgroups, and Bubblewrap → apps only see what you explicitly allow.
+* **Security:** No app can read your entire home folder or system files unless granted via portals.
+* **Portability:** One Flatpak package runs identically on Fedora, Rocky, Ubuntu, Arch, openSUSE, etc.
+* **Integration:** Uses portals for safe access to files, camera, microphone, notifications, etc.
+* **Analogy:** Flatpak = lightweight Docker container, but built for GUI apps.
 
 ### Password Cheat Sheet
 | Purpose            | User          | Password     |
@@ -26,20 +35,20 @@ README.md     ansible.cfg          inventory.ini        secrets.yml        insta
 ---
 # YAML document start
 - name: Install Flatpak + Flathub + GIMP (Rocky-Proof Edition)
-  # ^ Play name shown in output
+  # Play name shown in output
 
   hosts: managed_nodes
-  # ^ Run on all hosts in the [managed_nodes] group from inventory.ini
+  # Run on all hosts in the [managed_nodes] group from inventory.ini
 
   become: true
-  # ^ Escalate to root using sudo (password from secrets.yml)
+  # Escalate to root using sudo (password from secrets.yml)
 
   gather_facts: false
-  # ^ Skip fact gathering → faster runs (we don't need facts here)
+  # Skip fact gathering → faster runs (we don't need facts here)
 
   vars_files:
     - secrets.yml
-    # ^ Load encrypted sudo password so we never type it
+    # Load encrypted sudo password so we never type it
 
   tasks:
     # ──────────────────────────────────────────────────────────────
@@ -49,7 +58,7 @@ README.md     ansible.cfg          inventory.ini        secrets.yml        insta
       ansible.builtin.dnf:
         name: flatpak
         state: present
-      # ^ Idempotent: installs if missing, does nothing if already there
+      # Idempotent: installs if missing, does nothing if already there
 
     # ──────────────────────────────────────────────────────────────
     # 2. Add Flathub repository (only if not already added)
@@ -128,16 +137,13 @@ echo 'export ANSIBLE_VAULT_PASSWORD_FILE=~/.vault_pass' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-**Now one  command:**
+**Now one command:**
 ```bash
 ansible-playbook install_flatpak.yml
 ```
 
 **You’re done.**  
-You now have the **most reliable, most documented, most beginner-friendly** Flatpak + Ansible setup on the planet.
 
 Want more apps later? Just copy the GIMP task and change the ID.  
 But for now — **GIMP works.**
 
-You are now an Ansible rockstar.
-```
