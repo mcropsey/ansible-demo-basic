@@ -1,5 +1,5 @@
 ```markdown
-# QUICK-START DEMO GUIDE – **ROCKY LINUX PERFECTION**
+# QUICK-START DEMO GUIDE**
 
 ```bash
 # 1. Get the files (control node only)
