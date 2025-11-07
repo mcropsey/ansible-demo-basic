@@ -1,127 +1,198 @@
-# **DEMO: Ansible Vault & Variables Quick Reference**  
-**Presenter:** *You* | **Audience:** DevOps Beginners / Security-Conscious Admins  
-**Goal:** Show **secure variable handling** with `ansible-vault`, **playbook structure**, and **best practices** using real-world Flatpak + GIMP install.
+# Ansible Vault & Variables Quick Reference  
+**Demo Build Guide – Fully Organized, Speaker-Ready**  
+*Based on: https://github.com/mcropsey/ansible-demo-basic*  
+*Target Audience: RHEL-based systems | Beginner to Intermediate Ansible Users*
 
 ---
 
-## **SLIDE 1: Agenda & Objectives**  
-### **Talking Points (30 sec)**  
-> “Today we’ll cover **Ansible variables**, **Vault encryption**, and **two ways to install Flatpak apps** — one basic with `command`, one *best practice* with proper modules.  
-> By the end, you’ll know how to:  
-> - Encrypt secrets safely  
-> - Use them in playbooks  
-> - Avoid anti-patterns like `command` + `changed_when: false`  
-> Let’s jump in!”
+## How to Get the Demo Files from GitHub
 
----
+> **Talking Points (Before Cloning):**
+> - "We’re going to pull a pre-built demo from GitHub. This ensures consistency and saves time."
+> - "First, we verify `git` is installed on RHEL — if not, we install it."
+> - "Then we clone the repo and explore its structure."
 
-## **SLIDE 2: Variables in Ansible**  
-[Link: Ansible Docs – Using Variables](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html)
-
-### **Talking Points (1 min)**  
-> “Variables are the backbone of Ansible.  
-> - Defined in: inventory, playbooks, `host_vars/`, `group_vars/`, roles, etc.  
-> - **Precedence matters** — command line > playbook > inventory  
-> - Scoping: `host`, `group`, `play`, `task`  
->  
-> **Security risk:** Plaintext passwords in files = bad.  
-> → This is why **Ansible Vault** exists.”
-
----
-
-## **SLIDE 3: YAML Syntax & Structure**  
-[Link: Ansible Docs – YAML Syntax](https://docs.ansible.com/ansible/latest/reference_appendices/YAMLSyntax.html)
-
-### **Talking Points (45 sec)**  
-> “Ansible uses YAML — indentation = structure.  
-> - `key: value` → dictionary  
-> - `- item` → list  
-> - `!vault |` → encrypted block  
->  
-> **Pro tip:** Use `yamllint` or VS Code to catch syntax errors early.”
-
----
-
-## **SLIDE 4: ansible-vault CLI Reference**  
-[Link: ansible-vault CLI](https://docs.ansible.com/ansible/latest/cli/ansible-vault.html)
-
-### **Talking Points (1 min)**  
-> “Vault is your **password manager for Ansible**.  
-> Key commands:  
-> - `create` → new encrypted file  
-> - `edit` / `view` → modify safely  
-> - `encrypt` / `decrypt` / `rekey`  
-> - `encrypt_string` → inline secrets  
->  
-> We’ll use `--vault-id @prompt` for interactive demos — **no passwords in scripts**.”
-
----
-
-## **SLIDE 5: Environment Setup (Live or Pre-Done)**  
-### **Talking Points (1 min)**  
-> “Let’s set the stage:  
-> 1. **All boxes:** `ansibleuser` + password `ZAQ!xsw2`, member of `wheel`  
-> 2. **Control node:**  
->    - SSH key generated + copied  
->    - `ansible-core` installed via `dnf`  
-> 3. **Passwordless SSH** verified with `df -h && hostname`  
->  
-> → Now we can run playbooks **without prompts** (except Vault)”
-
-**Live Demo Snippet (Optional):**  
 ```bash
-ssh ansibleuser@192.168.1.95 "df -h && hostname"
+# Step 1: Verify git is installed (RHEL 8/9)
+git --version
+# If not found:
+sudo dnf install -y git
+
+# Step 2: Clone the demo repo
+git clone https://github.com/mcropsey/ansible-demo-basic.git
+cd ansible-demo-basic
+
+# Step 3: List files to confirm structure
+ls -la
+```
+
+**Expected Output After Clone:**
+```
+ansible.cfg
+inventory.ini
+secrets.yml
+test_vault.yml
+install_flatpak.yml
+flatpak_demo.yml
+README.md
 ```
 
 ---
 
-## **SLIDE 6: Creating the Vault File**  
-### **Talking Points (1 min)**  
-> “We store **only** the sudo password in Vault — nothing else.  
-> File: `secrets.yml`”
+# DEMO STRUCTURE & TALKING POINTS
 
-**Live Command:**  
+---
+
+## Slide 1: Variables in Ansible  
+**Docs:** [Ansible Variables](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html)
+
+> **Talking Points:**
+> - Variables reduce repetition and enable dynamic playbooks.
+> - **Precedence Order (high to low):**  
+>   `command line > role defaults > inventory > playbook > host_vars/group_vars`
+> - We’ll use `vars_files` + Vault for secure variable injection.
+
+---
+
+## Slide 2: YAML Syntax & Structure  
+**Docs:** [YAML Syntax](https://docs.ansible.com/ansible/latest/reference_appendices/YAMLSyntax.html)
+
+> **Talking Points:**
+> - YAML is indentation-sensitive (2 spaces, no tabs).
+> - Playbooks use dictionaries (`key: value`) and lists (`- item`).
+> - `!vault |` is a special tag for encrypted strings.
+
+---
+
+## Slide 3: Ansible Vault CLI Usage  
+**Docs:** [ansible-vault](https://docs.ansible.com/ansible/latest/cli/ansible-vault.html)
+
+> **Talking Points:**
+> - Vault encrypts sensitive data at rest.
+> - Key commands:
+>   - `create` → new encrypted file
+>   - `edit` / `view` → modify or inspect
+>   - `encrypt_string` → inline encryption
+>   - `rekey` → change password
+> - We use `--vault-id @prompt` for interactive password entry.
+
+---
+
+## Slide 4: Encrypting Variables  
+**Docs:** [Encrypting Content](https://docs.ansible.com/ansible/latest/vault_guide/vault_encrypting_content.html)
+
+> **Talking Points:**
+> - Never hardcode passwords in plain text.
+> - Use `ansible-vault encrypt_string` for one-liners:
+>   ```bash
+>   ansible-vault encrypt_string 'ZAQ!xsw2' --name 'ansible_become_password'
+>   ```
+> - Or store in `secrets.yml` via `ansible-vault create`.
+
+---
+
+## Slide 5: Using Vault in Playbooks  
+**Docs:** [Vault in Playbooks](https://docs.ansible.com/ansible/latest/vault_guide/vault_using_vault_in_playbooks.html)
+
+> **Talking Points:**
+> - Include encrypted files with `vars_files:`
+> - Decrypt at runtime using `--vault-id @prompt`
+> - Never commit decrypted secrets to Git!
+
+---
+
+## Slide 6: Playbook Basics  
+**Tutorial:** [LabEx Playbook Basics](https://labex.io/tutorials/ansible-how-to-use-ansible-playbook-359626)
+
+> **Talking Points:**
+> - Minimal playbook needs: `name`, `hosts`, `tasks`
+> - `become: true` → sudo
+> - `register` → capture command output
+> - `changed_when` / `failed_when` → control task status
+
+---
+
+# LAB SETUP (All Nodes)
+
+> **Talking Points (Pre-Demo Prep):**
+> - "We need 3 RHEL nodes: 1 control, 2 managed."
+> - "All nodes must have `ansibleuser` with sudo access."
+> - "SSH key-based auth is required — no password prompts!"
+
+### On **ALL** Machines (Control + Managed)
 ```bash
+# Create ansibleuser
+sudo useradd -m ansibleuser
+echo 'ansibleuser:ZAQ!xsw2' | sudo chpasswd
+
+# Add to wheel group for sudo
+sudo usermod -aG wheel ansibleuser
+```
+
+### On **Control Node Only** (as `ansibleuser`)
+```bash
+su - ansibleuser
+
+# Generate SSH key
+ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
+
+# Copy to managed nodes
+ssh-copy-id ansibleuser@192.168.1.95
+ssh-copy-id ansibleuser@192.168.1.96
+
+# Test passwordless SSH
+ssh ansibleuser@192.168.1.95 "hostname && whoami"
+ssh ansibleuser@192.168.1.96 "hostname && whoami"
+```
+
+---
+
+# DEMO 1: Install Ansible & Create Vault
+
+> **Talking Points:**
+> - "We install `ansible-core` — lightweight, includes Vault."
+> - "Then create `secrets.yml` with the sudo password."
+
+```bash
+# Install Ansible
+sudo dnf install -y ansible-core
+
+# Create encrypted vault file
 ansible-vault create secrets.yml
 ```
 
-**Paste this content (when prompted):**
+**Paste into `secrets.yml`:**
 ```yaml
 ---
 # secrets.yml - encrypted with ansible-vault
 ansible_become_password: ZAQ!xsw2
 ```
 
-**Verify:**  
 ```bash
-ansible-vault view secrets.yml --vault-id @prompt
-```
+# View (prompts for password)
+ansible-vault view secrets.yml
 
-> “Vault files are **AES-256 encrypted**. Never commit plaintext!”
+# Edit later if needed
+ansible-vault edit secrets.yml
+```
 
 ---
 
-## **SLIDE 7: Inventory File**  
-### **Talking Points (30 sec)**  
-> “Simple INI inventory — no secrets here.”
+# DEMO 2: Inventory & First Vault Playbook
 
-**File: `inventory.ini`**
+> **Talking Points:**
+> - "Inventory defines targets and connection vars."
+> - "`ansible_user` tells Ansible who to SSH as."
+> - "Playbook uses vaulted password via `vars_files`."
+
+### `inventory.ini`
 ```ini
 [managed_nodes]
 192.168.1.95 ansible_user=ansibleuser
 192.168.1.96 ansible_user=ansibleuser
 ```
 
-> “We’ll reference this with `-i inventory.ini`”
-
----
-
-## **SLIDE 8: First Playbook — Vault Test**  
-**File: `test_vault.yml`**
-
-### **Talking Points (1 min)**  
-> “Goal: Prove we can **become root** using the encrypted password.”
-
+### `test_vault.yml`
 ```yaml
 ---
 - name: Verify sudo password (via Ansible Vault)
@@ -147,26 +218,28 @@ ansible-vault view secrets.yml --vault-id @prompt
         msg: "Sudo verified: became root on {{ inventory_hostname }}"
 ```
 
-**Run:**  
+**Run It:**
 ```bash
 ansible-playbook -i inventory.ini test_vault.yml --vault-id @prompt
 ```
 
-**Expected Output:**  
+> **Expected Output:**
 ```
+TASK [Report success] ************
 ok: [192.168.1.95] => { "msg": "Sudo verified: became root on 192.168.1.95" }
+ok: [192.168.1.96] => { "msg": "Sudo verified: became root on 192.168.1.96" }
 ```
-
-> “Vault password entered once → decrypted at runtime → never logged.”
 
 ---
 
-## **SLIDE 9: install_flatpak.yml — Basic Approach (command module)**  
-**File: `install_flatpak.yml`**
+# DEMO 3: Install Flatpak (Basic – Command Module)
 
-### **Talking Points (1 min)**  
-> “This works… but it’s **not idempotent** and **hard to maintain**.”
+> **Talking Points:**
+> - "We’ll install GIMP via Flatpak — two ways."
+> - "First: raw `command` module (imperative)."
+> - "Use `changed_when: false` to avoid false 'changed' status."
 
+### `install_flatpak.yml`
 ```yaml
 ---
 - name: Install Flatpak and GIMP on managed nodes
@@ -174,7 +247,6 @@ ok: [192.168.1.95] => { "msg": "Sudo verified: became root on 192.168.1.95" }
   become: true
   vars_files:
     - secrets.yml
-
   tasks:
     - name: Ensure Flatpak is installed
       ansible.builtin.dnf:
@@ -197,180 +269,136 @@ ok: [192.168.1.95] => { "msg": "Sudo verified: became root on 192.168.1.95" }
       changed_when: false
 ```
 
-**Run:**  
+**Run:**
 ```bash
 ansible-playbook -i inventory.ini install_flatpak.yml --vault-id @prompt
 ```
 
-> “Notice `changed_when: false` → lies to Ansible.  
-> Not ideal for production.”
-
 ---
 
-## **SLIDE 10: Best Practice — Install community.general**  
-### **Talking Points (45 sec)**  
-> “Ansible core doesn’t include Flatpak modules.  
-> We install the **community collection** from Galaxy.”
+# DEMO 4: Best Practice – Use Flatpak Modules
 
-**Run:**  
+> **Talking Points:**
+> - "Ansible has purpose-built modules — idempotent by default."
+> - "`community.general` collection adds `flatpak` and `flatpak_remote`."
+> - "No need for `changed_when: false` — modules handle state."
+
+### Install Collection
 ```bash
 ansible-galaxy collection install community.general
 ```
 
-> “Now we get:  
-> - `community.general.flatpak`  
-> - `community.general.flatpak_remote`  
-> → **Idempotent, clean, readable**”
-
----
-
-## **SLIDE 11: flatpak_demo.yml — Two Approaches Side-by-Side**  
-**File: `flatpak_demo.yml`**
-
-### **Talking Points (2 min)**  
-> “Same goal, two philosophies:  
-> - `--tags basic` → `command` module (anti-pattern)  
-> - `--tags best` → proper modules (recommended)”
-
+### `flatpak_demo.yml` (Full Tagged Version)
 ```yaml
 ---
 # ============================================================================
 # Flatpak Demo Playbook — Command vs. Flatpak Modules
-# Run: ansible-playbook flatpak_demo.yml --tags basic
-#      ansible-playbook flatpak_demo.yml --tags best
+# Run with tags:
+#   --tags basic  → command module approach
+#   --tags best   → proper module approach
 # ============================================================================
 
 - name: Flatpak Demo (Two Approaches)
   hosts: managed_nodes
   become: true
   gather_facts: false
+  vars_files:
+    - secrets.yml
 
   tasks:
     ###########################################################################
-    # SECTION 1 — BASIC APPROACH USING COMMAND MODULE
+    # SECTION 1 — BASIC: COMMAND MODULE
     ###########################################################################
     - name: Ensure Flatpak is installed (Basic)
       ansible.builtin.dnf:
         name: flatpak
         state: present
-      tags: [basic]
+      tags: basic
 
     - name: Add Flathub repo (Basic)
       ansible.builtin.command:
         cmd: flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
       changed_when: false
-      tags: [basic]
+      tags: basic
 
     - name: Update Flatpak metadata (Basic)
       ansible.builtin.command:
         cmd: flatpak update --appstream -y
       changed_when: false
-      tags: [basic]
+      tags: basic
 
-    - name: Install GIMP using command module (Basic)
+    - name: Install GIMP (Basic)
       ansible.builtin.command:
         cmd: flatpak install -y flathub org.gimp.GIMP
       changed_when: false
-      tags: [basic]
+      tags: basic
 
     ###########################################################################
-    # SECTION 2 — BEST PRACTICE USING FLATPAK MODULES
+    # SECTION 2 — BEST: FLATPAK MODULES
     ###########################################################################
     - name: Ensure Flathub remote exists (Best)
       community.general.flatpak_remote:
         name: flathub
         state: present
         flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
-      tags: [best]
+      tags: best
 
-    - name: Ensure GIMP is installed from Flathub (Best)
+    - name: Ensure GIMP is installed (Best)
       community.general.flatpak:
         name: org.gimp.GIMP
         remote: flathub
         state: present
-      tags: [best]
+      tags: best
 ```
 
----
-
-## **SLIDE 12: Run the Demos**  
-### **Talking Points (2 min)**  
-
-#### **1. Basic Approach**  
+**Run Sections Separately:**
 ```bash
+# Basic (command)
 ansible-playbook -i inventory.ini flatpak_demo.yml --tags basic --vault-id @prompt
-```
 
-> “Works, but **always ‘changed’** or **lies with `changed_when`**”
-
-#### **2. Best Practice**  
-```bash
+# Best (modules)
 ansible-playbook -i inventory.ini flatpak_demo.yml --tags best --vault-id @prompt
 ```
 
-> “**Idempotent** — runs once, skips on rerun.  
-> Clean output. No hacks.”
-
 ---
 
-## **SLIDE 13: Optional: ansible.cfg**  
-**File: `ansible.cfg` (in project dir)**
+# OPTIONAL: `ansible.cfg` (Project Local)
 
-### **Talking Points (30 sec)**  
-> “Avoid repeating `become: true` in every play.”
+> **Talking Points:**
+> - "Avoid repeating `become: true` in every playbook."
+> - "Local `ansible.cfg` applies only to this directory."
 
+### `ansible.cfg`
 ```ini
+[defaults]
+inventory = inventory.ini
+
 [privilege_escalation]
-become=True
-become_method=sudo
-become_user=root
-```
-
-> “Now all playbooks in this dir default to sudo.”
-
----
-
-## **SLIDE 14: Key Takeaways**  
-### **Talking Points (1 min)**  
-
-| Do | Don't |
-|------|---------|
-| Use `ansible-vault` for secrets | Store passwords in plaintext |
-| Use `--vault-id @prompt` in demos | Hardcode vault passwords |
-| Prefer modules over `command` | Use `changed_when: false` to fake idempotency |
-| Use `ansible-galaxy collection install` | Reinvent the wheel |
-
-> “**Secure + Idempotent + Maintainable** = Production-ready Ansible”
-
----
-
-## **SLIDE 15: Resources & Next Steps**  
-### **Talking Points (30 sec)**  
-- [Ansible Vault Docs](https://docs.ansible.com/ansible/latest/user_guide/vault.html)  
-- [community.general Collection](https://galaxy.ansible.com/community/general)  
-- Try: Encrypt a DB password, use in `postgresql_user` module  
-- Challenge: Write a role with encrypted `defaults/main.yml`
-
----
-
-## **Q&A + Wrap-Up**  
-> “Any questions?  
-> Let’s encrypt something live if time allows!”
-
----
-
-# **Downloadable Demo Bundle**  
-Create a zip with:
-```
-demo/
-├── inventory.ini
-├── secrets.yml (encrypted)
-├── test_vault.yml
-├── install_flatpak.yml
-├── flatpak_demo.yml
-├── ansible.cfg
-└── README.md (this guide)
+become = true
+become_method = sudo
+become_user = root
 ```
 
 ---
 
+# FINAL DEMO SUMMARY (Wrap-Up Slide)
+
+| Feature | Demo'd? | Key Takeaway |
+|-------|--------|-------------|
+| Git Clone | Yes | Always verify tools (`git`) |
+| SSH Keys | Yes | Passwordless auth is mandatory |
+| Ansible Install | Yes | `ansible-core` is lightweight |
+| Vault Create/Edit | Yes | Encrypt sensitive vars |
+| Vault in Playbook | Yes | `--vault-id @prompt` |
+| Inventory | Yes | `ansible_user` per host |
+| `command` Module | Yes | Use `changed_when: false` |
+| `community.general` | Yes | Prefer modules over shell |
+| Tags | Yes | Run subsets of playbooks |
+
+---
+
+**You’re ready to present!**  
+All files are in the GitHub repo.  
+Practice with `--vault-id @prompt` and tag filtering.  
+
+> **Pro Tip:** Add `export ANSIBLE_VAULT_PASSWORD_FILE=~/.vault_pass` later for automation (not in demo).
