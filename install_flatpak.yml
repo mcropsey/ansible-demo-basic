@@ -1,27 +1,40 @@
 ---
-- name: Install Flatpak and GIMP on managed nodes
-  hosts: managed_nodes
-  become: true
-  vars_files:
-    - secrets.yml
+# This is a complete Ansible playbook.
+# The three dashes (---) mark the start of a YAML document.
+# Everything below is one big list of "plays" (there is only one play here).
 
+- name: Install Flatpak and GIMP on managed nodes   # Human-readable description of what this play does
+  hosts: managed_nodes                              # Which hosts (servers/machines) to run on.
+                                                    # "managed_nodes" is a group defined in your inventory file.
+  become: true                                      # Run tasks as root (sudo). Equivalent to --become or -b in CLI.
+  vars_files:                                       # Load variables from external file(s)
+    - secrets.yml                                   # Useful for passwords, API keys, etc. (keeps them out of the playbook)
+
+  # ──────────────────────────────────────────────────────────────
+  # TASKS section – the actual work that Ansible will perform
+  # ──────────────────────────────────────────────────────────────
   tasks:
-    - name: Ensure Flatpak is installed
-      ansible.builtin.dnf:
-        name: flatpak
-        state: present
 
-    - name: Add Flathub repository if not exists
-      ansible.builtin.command:
+    - name: Ensure Flatpak is installed             # Task name (shows up in Ansible output)
+      ansible.builtin.dnf:                          # Module to use: the DNF package manager (Fedora, RHEL, CentOS)
+        name: flatpak                               # Package name to install
+        state: present                              # "present" = install if missing, do nothing if already there
+                                                    # Other common states: absent, latest
+
+    - name: Add Flathub repository if not exists   # Task name
+      ansible.builtin.command:                      # Run a raw shell command
         cmd: flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-      changed_when: false
+                                                    # --if-not-exists = idempotent (won't add twice)
+      changed_when: false                           # Tell Ansible this task NEVER reports "changed"
+                                                    # (even if it runs, we don't want it to trigger handlers or restarts)
 
-    - name: Update Flatpak metadata
+    - name: Update Flatpak metadata                 # Task name
       ansible.builtin.command:
-        cmd: flatpak update --appstream
-      changed_when: false
+        cmd: flatpak update --appstream             # Refresh appstream data so Flatpak knows what apps exist
+      changed_when: false                           # Same as above – not a real change
 
-    - name: Install GIMP from Flathub
+    - name: Install GIMP from Flathub               # Task name
       ansible.builtin.command:
-        cmd: flatpak install -y flathub org.gimp.GIMP
-      changed_when: false
+        cmd: flatpak install -y flathub org.gimp.GIMP   # -y = assume yes, non-interactive
+      changed_when: false                           # Installing an app is a real change, but for simplicity we mark it false here
+                                                    # (you could remove this line if you want accurate "changed" status)

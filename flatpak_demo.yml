@@ -1,56 +1,38 @@
 ---
-# ============================================================================
-# Flatpak Demo Playbook — Command vs. Flatpak Modules
-# Run: ansible-playbook flatpak_demo.yml --tags basic
-#      ansible-playbook flatpak_demo.yml --tags best
-# ============================================================================
-
-- name: Flatpak Demo (Two Approaches)
+- name: Flatpak Demo – Command vs Modules
   hosts: managed_nodes
   become: true
   gather_facts: false
+  vars_files:
+    - secrets.yml
 
   tasks:
-    ###########################################################################
-    # SECTION 1 — BASIC APPROACH USING COMMAND MODULE
-    ###########################################################################
-    - name: Ensure Flatpak is installed (Basic)
+    - name: Install flatpak package
       ansible.builtin.dnf:
         name: flatpak
         state: present
-      tags: [basic]
+      tags: basic
 
-    - name: Add Flathub repo (Basic)
-      ansible.builtin.command:
-        cmd: flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    - name: Add Flathub (command)
+      ansible.builtin.command: flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
       changed_when: false
-      tags: [basic]
+      tags: basic
 
-    - name: Update Flatpak metadata (Basic)
-      ansible.builtin.command:
-        cmd: flatpak update --appstream -y
+    - name: Install GIMP (command)
+      ansible.builtin.command: flatpak install -y flathub org.gimp.GIMP
       changed_when: false
-      tags: [basic]
+      tags: basic
 
-    - name: Install GIMP using command module (Basic)
-      ansible.builtin.command:
-        cmd: flatpak install -y flathub org.gimp.GIMP
-      changed_when: false
-      tags: [basic]
-
-    ###########################################################################
-    # SECTION 2 — BEST PRACTICE USING FLATPAK MODULES
-    ###########################################################################
-    - name: Ensure Flathub remote exists (Best)
+    - name: Add Flathub remote (module)
       community.general.flatpak_remote:
         name: flathub
         state: present
         flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
-      tags: [best]
+      tags: best
 
-    - name: Ensure GIMP is installed from Flathub (Best)
+    - name: Install GIMP (module)
       community.general.flatpak:
         name: org.gimp.GIMP
         remote: flathub
         state: present
-      tags: [best]
+      tags: best
