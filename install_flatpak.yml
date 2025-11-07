@@ -1,20 +1,20 @@
 ---
 # YAML document start
 - name: Install Flatpak + Flathub + GIMP (Rocky-Proof Edition)
-  # ^ Play name shown in output
+  # Play name shown in output
 
   hosts: managed_nodes
-  # ^ Run on all hosts in the [managed_nodes] group from inventory.ini
+  # Run on all hosts in the [managed_nodes] group from inventory.ini
 
   become: true
-  # ^ Escalate to root using sudo (password from secrets.yml)
+  # Escalate to root using sudo (password from secrets.yml)
 
   gather_facts: false
-  # ^ Skip fact gathering → faster runs (we don't need facts here)
+  # Skip fact gathering → faster runs (we don't need facts here)
 
   vars_files:
     - secrets.yml
-    # ^ Load encrypted sudo password so we never type it
+    # Load encrypted sudo password so we never type it
 
   tasks:
     # ──────────────────────────────────────────────────────────────
@@ -24,7 +24,7 @@
       ansible.builtin.dnf:
         name: flatpak
         state: present
-      # ^ Idempotent: installs if missing, does nothing if already there
+      # Idempotent: installs if missing, does nothing if already there
 
     # ──────────────────────────────────────────────────────────────
     # 2. Add Flathub repository (only if not already added)
