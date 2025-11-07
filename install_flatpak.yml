@@ -1,40 +1,37 @@
 ---
-# This is a complete Ansible playbook.
-# The three dashes (---) mark the start of a YAML document.
-# Everything below is one big list of "plays" (there is only one play here).
+# YAML document start indicator
 
-- name: Install Flatpak and GIMP on managed nodes   # Human-readable description of what this play does
-  hosts: managed_nodes                              # Which hosts (servers/machines) to run on.
-                                                    # "managed_nodes" is a group defined in your inventory file.
-  become: true                                      # Run tasks as root (sudo). Equivalent to --become or -b in CLI.
-  vars_files:                                       # Load variables from external file(s)
-    - secrets.yml                                   # Useful for passwords, API keys, etc. (keeps them out of the playbook)
+- name: Install Flatpak + Flathub + Popular Apps  # Play name shown in Ansible output
+  hosts: managed_nodes                          # Target group from your inventory
+  become: true                                  # Use sudo for elevated privileges
+  gather_facts: false                           # Skip system fact gathering for faster runs
+  vars_files:
+    - secrets.yml                               # Load external variable file (e.g., passwords, tokens)
 
-  # ──────────────────────────────────────────────────────────────
-  # TASKS section – the actual work that Ansible will perform
-  # ──────────────────────────────────────────────────────────────
-  tasks:
+  tasks:                                        # Begin list of tasks to run
+    - name: Install flatpak package              # Task description
+      ansible.builtin.dnf:                      # Use the built-in DNF module for RHEL/Fedora
+        name: flatpak                           # Package to install
+        state: present                          # Ensure the package is installed (idempotent)
 
-    - name: Ensure Flatpak is installed             # Task name (shows up in Ansible output)
-      ansible.builtin.dnf:                          # Module to use: the DNF package manager (Fedora, RHEL, CentOS)
-        name: flatpak                               # Package name to install
-        state: present                              # "present" = install if missing, do nothing if already there
-                                                    # Other common states: absent, latest
+    - name: Add Flathub repository (official module)  # Task to configure Flatpak remote
+      community.general.flatpak_remote:         # Module for managing Flatpak repositories
+        name: flathub                           # Name of the Flatpak remote repo
+        state: present                          # Ensure this repo exists
+        flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo  # Official Flathub URL
 
-    - name: Add Flathub repository if not exists   # Task name
-      ansible.builtin.command:                      # Run a raw shell command
-        cmd: flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-                                                    # --if-not-exists = idempotent (won't add twice)
-      changed_when: false                           # Tell Ansible this task NEVER reports "changed"
-                                                    # (even if it runs, we don't want it to trigger handlers or restarts)
-
-    - name: Update Flatpak metadata                 # Task name
-      ansible.builtin.command:
-        cmd: flatpak update --appstream             # Refresh appstream data so Flatpak knows what apps exist
-      changed_when: false                           # Same as above – not a real change
-
-    - name: Install GIMP from Flathub               # Task name
-      ansible.builtin.command:
-        cmd: flatpak install -y flathub org.gimp.GIMP   # -y = assume yes, non-interactive
-      changed_when: false                           # Installing an app is a real change, but for simplicity we mark it false here
-                                                    # (you could remove this line if you want accurate "changed" status)
+    - name: Install popular Flatpak apps         # Task description
+      community.general.flatpak:                 # Module for managing Flatpak applications
+        name:                                   # List of application IDs to install
+          - org.libreoffice.LibreOffice          # LibreOffice office suite
+          - org.gimp.GIMP                        # GIMP image editor
+          - com.spotify.Client                   # Spotify music client
+          - us.zoom.Zoom                         # Zoom video conferencing
+          - org.mozilla.firefox                  # Firefox browser
+          - com.valvesoftware.Steam              # Steam gaming platform
+          - org.videolan.VLC                     # VLC media player
+          - com.obsproject.Studio                # OBS Studio for streaming/recording
+          - org.telegram.desktop                 # Telegram desktop client
+          - com.slack.Slack                      # Slack messaging app
+        remote: flathub                         # Source repository (Flathub)
+        state: present                          # Ensure each app is installed
