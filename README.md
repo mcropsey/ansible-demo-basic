@@ -1,6 +1,5 @@
 ```markdown
-# QUICK-START DEMO GUIDE – **ULTIMATE BEGINNER EDITION**  
-**One playbook. Fully commented. Zero clutter. Perfect for learning & production.**
+# QUICK-START DEMO GUIDE 
 
 You will finish this guide as a **real Ansible pro** — no bad habits, no confusion.
 
@@ -11,21 +10,21 @@ git clone https://github.com/mcropsey/ansible-demo-basic.git
 cd ansible-demo-basic
 ```
 
-**You now have exactly these 4 files (that’s literally all you need):**
+**You now have these 5 files
 ```
-ansible.cfg          inventory.ini        secrets.yml        install_flatpak.yml
+ansible.cfg          inventory.ini        secrets.yml        install_flatpak.yml  READM.md
 ```
 
-### Password Cheat Sheet (copy once → never think again)
+### Passwords
 
 | Purpose            | Username      | Password     | Used for?                              |
 |--------------------|---------------|--------------|----------------------------------------|
 | SSH + Sudo         | `ansibleuser` | **ZAQ!xsw2** | Login & become password                |
 | Ansible Vault      | —             | **demo123**  | Encrypt/decrypt `secrets.yml`          |
 
-### The ONLY playbook you will EVER run – **fully commented for learning**
+### The playbook you will run – **fully commented for learning**
 
-#### `install_flatpak.yml` – **Copy-paste ready, production-grade, beginner-friendly**
+#### `install_flatpak.yml` – 
 ```yaml
 ---
 # YAML document start indicator
@@ -65,10 +64,10 @@ ansible.cfg          inventory.ini        secrets.yml        install_flatpak.yml
         state: present                        # Ensure every app is installed
 ```
 
-### Why this is the **only correct way**
+### Why this is the recommended way**
 
 > **Beginner note:**  
-> Never use raw `command:` with `flatpak remote-add` or `flatpak install`.  
+> Try not to use raw `command:` with `flatpak remote-add` or `flatpak install`.  
 > It **lies** — reports "changed" every single run, even when nothing changed.  
 > These **official modules** tell the truth:  
 > → First run = **yellow** (real changes)  
@@ -103,14 +102,16 @@ ansible-vault encrypt secrets.yml
 # Confirm: demo123
 ```
 
-### Run it – **ONE command for life**
+### Run it 
 
 ```bash
 # First time (or anytime)
 ansible-playbook install_flatpak.yml --vault-id @prompt   # enter: demo123
 ```
 
-**Run it again → pure green perfection:**
+**Run it again → pure green showing things do not run again and it is logged that way:**
+**Had you dont this via teh command module you would she changes that never happend**
+
 ```
 ok=12    changed=0    unreachable=0    failed=0
 ```
@@ -129,9 +130,8 @@ source ~/.bashrc
 ansible-playbook install_flatpak.yml
 ```
 
-**You’re done.**  
-You now own the **cleanest, most correct, fully documented** Flatpak Ansible setup on Earth.  
+**You’re done.**   
 
-Copy this playbook. Study the comments. Use this pattern forever.  
-Welcome to real Ansible.
+Copy this playbook. Study the comments.  
+Welcome to Ansible.
 ```
